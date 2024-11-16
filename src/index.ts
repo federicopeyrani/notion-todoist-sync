@@ -3,26 +3,29 @@ import {
   syncTaskIntervalMilliseconds,
 } from "./utils/config.ts";
 import { syncNotionTasksToTodoist } from "./sync/sync-notion-tasks-to-todoist.ts";
+import { ParametersStore } from "./data/parameters-store.ts";
 
-let afterUpdateTimestamp: string | undefined;
-let nextAfterUpdateTimestamp: string | undefined;
-let todoistSyncToken: string | undefined;
+const store = await ParametersStore.new("./.store.json");
 
 const task = async () => {
-  console.log("Syncing tasks between Notion and Todoist");
+  console.log("Beginning sync task\u2026");
 
-  afterUpdateTimestamp = new Date().toISOString();
+  const storeData = await store.read();
+  const afterUpdateTimestamp = new Date();
 
-  todoistSyncToken = await syncNotionTasksToTodoist(
+  const newTodoistSyncToken = await syncNotionTasksToTodoist(
     notionDatabaseId,
-    todoistSyncToken,
-    nextAfterUpdateTimestamp,
+    storeData.todoistSyncToken,
+    storeData.afterUpdateTimestamp?.toISOString(),
   );
 
-  nextAfterUpdateTimestamp = afterUpdateTimestamp;
+  await store.write({
+    todoistSyncToken: newTodoistSyncToken,
+    afterUpdateTimestamp,
+  });
 
   console.log("Done");
-  console.log("Sleeping...");
+  console.log("Sleeping\u2026");
 };
 
 await task();

@@ -28,7 +28,6 @@ export const getPagesIterator = async (
             property: "Last edited by",
             people: { does_not_contain: bot.id },
           },
-          { property: "Status", status: { does_not_equal: "Done" } },
           {
             property: "Source",
             rich_text: sourceIsNotEmpty

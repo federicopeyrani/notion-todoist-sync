@@ -11,6 +11,11 @@ export const requiresUpdate = async (
     return true;
   }
 
+  const isNotionPageArchived = notionPage.archived || notionPage.in_trash;
+  if (event.is_deleted !== isNotionPageArchived) {
+    return true;
+  }
+
   if (isChecked(notionPage) !== event.checked) {
     return true;
   }

@@ -3,6 +3,7 @@ import type { TodoistEventItem } from "../todoist/types.ts";
 import { syncTodoistTask } from "./sync-todoist-task.ts";
 import { getProperty } from "../notion/get-property.ts";
 import { syncNotionTask } from "./sync-notion-task.ts";
+import { getSyncSource } from "./get-sync-source.ts";
 
 export const performSync = async (
   databaseId: string,
@@ -10,10 +11,7 @@ export const performSync = async (
   todoistTaskId: string,
   event?: TodoistEventItem,
 ) => {
-  if (
-    event &&
-    new Date(notionPage.last_edited_time) < new Date(event.updated_at)
-  ) {
+  if (getSyncSource(notionPage, event) === event) {
     console.debug(
       `[~] Updating Notion task (title=\"${event.content}\",taskId=${todoistTaskId})`,
     );

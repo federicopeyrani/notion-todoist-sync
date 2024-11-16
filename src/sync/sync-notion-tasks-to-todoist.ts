@@ -1,37 +1,35 @@
-import { notion } from "../utils/config.ts";
 import { getProperty } from "../notion/get-property.ts";
 import { getPagesIterator } from "../notion/get-pages-iterator.ts";
 import { pushNotionTask } from "./push-notion-task.ts";
 import { getActivityLogEvents } from "../todoist/get-activity-log-events.ts";
 import { pushTodoistTask } from "./push-todoist-task.ts";
-import { isFullPage } from "@notionhq/client";
 import { performSync } from "./perform-sync.ts";
 import { requiresUpdate } from "./requires-update.ts";
+import { getPageByTaskId } from "../notion/get-page-by-task-id.ts";
+import { performDelete } from "./perform-delete.ts";
+import { requiresDelete } from "./requires-delete.ts";
 
 export const syncNotionTasksToTodoist = async (
   databaseId: string,
   todoistSyncToken: string = "*",
   afterTimestamp?: string,
 ) => {
-  console.log("Getting activity log events from Todoist");
+  console.log("Getting activity log events from Todoist\u2026");
   const todoistSyncResponse = await getActivityLogEvents(todoistSyncToken);
   console.log(`Got ${todoistSyncResponse.items.length} events from Todoist`);
 
-  console.log("Getting tasks from Notion");
-  const syncTasksResponse = await getPagesIterator(databaseId, {
-    afterTimestamp,
-    sourceIsNotEmpty: true,
-  });
-
-  console.log("Syncing tasks between Notion and Todoist");
+  console.log("Syncing tasks between Notion and Todoist\u2026");
 
   // ---------------------------------------------------------
 
-  console.debug("Syncing from Notion to Todoist");
+  console.debug("Syncing from Notion to Todoist\u2026");
 
   const ignoreTodoistTaskIds = new Set<string>();
 
-  for await (const notionTask of syncTasksResponse) {
+  for await (const notionTask of await getPagesIterator(databaseId, {
+    afterTimestamp,
+    sourceIsNotEmpty: true,
+  })) {
     const todoistTaskId = getProperty(
       notionTask.properties,
       "Source",
@@ -49,33 +47,32 @@ export const syncNotionTasksToTodoist = async (
       (event) => event.id === todoistTaskId,
     );
 
-    if (!(await requiresUpdate(notionTask, todoistTask))) {
-      console.debug(
-        `Task does not require update (title=\"${todoistTask?.content}\", pageId=${notionTask.id})`,
-      );
+    if (todoistTask && requiresDelete(notionTask, todoistTask)) {
+      await performDelete(notionTask, todoistTask);
       continue;
     }
 
-    await performSync(databaseId, notionTask, todoistTaskId, todoistTask);
+    if (await requiresUpdate(notionTask, todoistTask)) {
+      await performSync(databaseId, notionTask, todoistTaskId, todoistTask);
+      continue;
+    }
+
+    console.debug(
+      `[ ] Task does not require update (title=\"${todoistTask?.content}\", pageId=${notionTask.id})`,
+    );
   }
 
   // ---------------------------------------------------------
 
   console.debug(
-    `Syncing ${todoistSyncResponse.items.length} item(s) from Todoist to Notion`,
+    `Syncing ${todoistSyncResponse.items.length} item(s) from Todoist to Notion\u2026`,
   );
   console.debug(`Ignoring ${ignoreTodoistTaskIds.size} tasks`);
 
   for (const event of todoistSyncResponse.items.filter(
     (event) => !ignoreTodoistTaskIds.has(event.id),
   )) {
-    const databaseQueryResponse = await notion.databases.query({
-      database_id: databaseId,
-      filter: { property: "Source", rich_text: { equals: event.id } },
-      page_size: 1,
-    });
-
-    const notionPage = databaseQueryResponse.results[0];
+    const notionPage = await getPageByTaskId(databaseId, event.id);
 
     if (notionPage === undefined) {
       console.debug(
@@ -85,24 +82,25 @@ export const syncNotionTasksToTodoist = async (
       continue;
     }
 
-    if (!isFullPage(notionPage)) {
-      throw new Error("Notion page is not a full page");
-    }
-
-    if (!(await requiresUpdate(notionPage, event))) {
-      console.debug(
-        `[ ] Task does not require update (title=\"${event.content}\", pageId=${notionPage.id})`,
-      );
+    if (requiresDelete(notionPage, event)) {
+      await performDelete(notionPage, event);
       continue;
     }
 
-    await performSync(databaseId, notionPage, event.id, event);
+    if (await requiresUpdate(notionPage, event)) {
+      await performSync(databaseId, notionPage, event.id, event);
+      continue;
+    }
+
+    console.debug(
+      `[ ] Task does not require update (title=\"${event.content}\", pageId=${notionPage.id})`,
+    );
   }
 
   // ---------------------------------------------------------
 
-  console.log("Pushing new tasks to Todoist");
-  console.log("Getting new tasks from Notion");
+  console.log("Pushing new tasks to Todoist\u2026");
+  console.log("Getting new tasks from Notion\u2026");
 
   const createTasksResponse = await getPagesIterator(databaseId, {
     afterTimestamp,
