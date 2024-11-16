@@ -1,4 +1,4 @@
-import { todoistToken } from "../config.ts";
+import { todoistToken } from "../utils/config.ts";
 import wretch from "wretch";
 import FormDataAddon from "wretch/addons/formData";
 import type { TodoistActivitySyncResponse } from "./types.ts";
@@ -13,5 +13,3 @@ export const getActivityLogEvents = (syncToken: string = "*") =>
     })
     .post()
     .json<TodoistActivitySyncResponse>();
-
-console.log(await getActivityLogEvents());

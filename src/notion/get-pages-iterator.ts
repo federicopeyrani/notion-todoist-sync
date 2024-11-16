@@ -1,6 +1,7 @@
 import { iteratePaginatedAPI } from "@notionhq/client";
-import { notion } from "../config.ts";
+import { notion } from "../utils/config.ts";
 import { mapPagesIterator } from "./map-pages-iterator.ts";
+import { getBot } from "./get-bot.ts";
 
 export interface GetPagesIteratorOptions {
   afterTimestamp?: string;
@@ -8,19 +9,25 @@ export interface GetPagesIteratorOptions {
   sourceIsNotEmpty?: boolean;
 }
 
-export const getPagesIterator = (
+export const getPagesIterator = async (
   databaseId: string,
   {
     afterTimestamp,
     beforeTimestamp,
     sourceIsNotEmpty,
   }: GetPagesIteratorOptions = {},
-) =>
-  mapPagesIterator(
+) => {
+  const bot = await getBot();
+
+  return mapPagesIterator(
     iteratePaginatedAPI(notion.databases.query, {
       database_id: databaseId,
       filter: {
         and: [
+          {
+            property: "Last edited by",
+            people: { does_not_contain: bot.id },
+          },
           { property: "Status", status: { does_not_equal: "Done" } },
           {
             property: "Source",
@@ -48,3 +55,4 @@ export const getPagesIterator = (
       },
     }),
   );
+};

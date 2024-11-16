@@ -1,14 +1,20 @@
-import { notion, userEmailAddress } from "../config.ts";
+import { notion, userEmailAddress } from "../utils/config.ts";
+import { InMemoryCache } from "../utils/in-memory-cache.ts";
+import type { UserObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 
-export const getUser = async () => {
-  const notionUsers = await notion.users.list({});
-  const notionUser = notionUsers.results.find(
-    (user) => user.type === "person" && user.person?.email === userEmailAddress,
-  );
+const cache = new InMemoryCache<UserObjectResponse>(5 * 60 * 1000);
 
-  if (!notionUser) {
-    throw new Error("Notion user not found");
-  }
+export const getUser = () =>
+  cache.getOrSet(userEmailAddress, async () => {
+    const notionUsers = await notion.users.list({});
+    const notionUser = notionUsers.results.find(
+      (user) =>
+        user.type === "person" && user.person?.email === userEmailAddress,
+    );
 
-  return notionUser;
-};
+    if (!notionUser) {
+      throw new Error("Notion user not found");
+    }
+
+    return notionUser;
+  });

@@ -1,9 +1,13 @@
 import { TodoistApi } from "@doist/todoist-api-typescript";
 import { Client } from "@notionhq/client";
 
+export const syncTaskIntervalMilliseconds = parseInt(
+  Bun.env.SYNC_TASK_INTERVAL_MILLIS,
+);
+
 export const userEmailAddress = Bun.env.USER_EMAIL_ADDRESS;
 
-export const notionToken = Bun.env.NOTION_TOKEN;
+const notionToken = Bun.env.NOTION_TOKEN;
 
 export const notionDatabaseId = Bun.env.NOTION_DATABASE_ID;
 
