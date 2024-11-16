@@ -5,6 +5,10 @@ export const syncTaskIntervalMilliseconds = parseInt(
   Bun.env.SYNC_TASK_INTERVAL_MILLIS,
 );
 
+export const cacheExpirationMilliseconds = parseInt(
+  Bun.env.CACHE_EXPIRATION_MILLIS,
+);
+
 export const userEmailAddress = Bun.env.USER_EMAIL_ADDRESS;
 
 const notionToken = Bun.env.NOTION_TOKEN;

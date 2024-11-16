@@ -1,4 +1,4 @@
-export class InMemoryCache<T> {
+export class InMemoryCache<T = unknown> {
   private cache: Record<string, { value: T; expiry: number }> = {};
 
   /**

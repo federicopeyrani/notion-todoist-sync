@@ -26,4 +26,8 @@ const task = async () => {
 };
 
 await task();
-setInterval(task, syncTaskIntervalMilliseconds);
+
+setInterval(
+  () => task().catch((error) => console.error("Unhandled error", error)),
+  syncTaskIntervalMilliseconds,
+);

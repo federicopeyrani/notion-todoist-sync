@@ -24,6 +24,9 @@ export const syncNotionTasksToTodoist = async (
   });
 
   console.log("Syncing tasks between Notion and Todoist");
+
+  // ---------------------------------------------------------
+
   console.debug("Syncing from Notion to Todoist");
 
   const ignoreTodoistTaskIds = new Set<string>();
@@ -56,6 +59,8 @@ export const syncNotionTasksToTodoist = async (
     await performSync(databaseId, notionTask, todoistTaskId, todoistTask);
   }
 
+  // ---------------------------------------------------------
+
   console.debug(
     `Syncing ${todoistSyncResponse.items.length} item(s) from Todoist to Notion`,
   );
@@ -74,7 +79,7 @@ export const syncNotionTasksToTodoist = async (
 
     if (notionPage === undefined) {
       console.debug(
-        `Creating Notion task (title=\"${event.content}\", taskId=${event.id})`,
+        `[+] Creating Notion task (title=\"${event.content}\", taskId=${event.id})`,
       );
       await pushTodoistTask(event, databaseId);
       continue;
@@ -86,7 +91,7 @@ export const syncNotionTasksToTodoist = async (
 
     if (!(await requiresUpdate(notionPage, event))) {
       console.debug(
-        `Task does not require update (title=\"${event.content}\", pageId=${notionPage.id})`,
+        `[ ] Task does not require update (title=\"${event.content}\", pageId=${notionPage.id})`,
       );
       continue;
     }
@@ -94,19 +99,21 @@ export const syncNotionTasksToTodoist = async (
     await performSync(databaseId, notionPage, event.id, event);
   }
 
+  // ---------------------------------------------------------
+
+  console.log("Pushing new tasks to Todoist");
   console.log("Getting new tasks from Notion");
+
   const createTasksResponse = await getPagesIterator(databaseId, {
     afterTimestamp,
     sourceIsNotEmpty: false,
   });
 
-  console.log("Pushing new tasks to Todoist");
-
   for await (const notionTask of createTasksResponse) {
     const title = getProperty(notionTask.properties, "Name", "title").title[0]
       ?.plain_text;
     console.log(
-      `Creating Todoist task (title=\"${title}\", pageId=${notionTask.id})`,
+      `[+] Creating Todoist task (title=\"${title}\", pageId=${notionTask.id})`,
     );
     await pushNotionTask(notionTask);
   }

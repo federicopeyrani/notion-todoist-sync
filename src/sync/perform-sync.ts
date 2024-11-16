@@ -15,7 +15,7 @@ export const performSync = async (
     new Date(notionPage.last_edited_time) < new Date(event.updated_at)
   ) {
     console.debug(
-      `Updating Notion task (title=\"${event.content}\",taskId=${todoistTaskId})`,
+      `[~] Updating Notion task (title=\"${event.content}\",taskId=${todoistTaskId})`,
     );
     await syncTodoistTask(event, databaseId, notionPage.id);
     return;
@@ -24,7 +24,7 @@ export const performSync = async (
   const pageTitle = getProperty(notionPage.properties, "Name", "title").title[0]
     ?.plain_text;
   console.debug(
-    `Updating Todoist task (title=\"${pageTitle}\", pageId=${notionPage.id})`,
+    `[~] Updating Todoist task (title=\"${pageTitle}\", pageId=${notionPage.id})`,
   );
 
   await syncNotionTask(notionPage, todoistTaskId);
